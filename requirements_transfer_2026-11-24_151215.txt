@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+aiogram
+python-dotenv
+Pillow
+exifread
+dnspython
+httpx
+python-multipart

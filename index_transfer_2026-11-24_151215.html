@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHADOW OSINT</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#f5f5f5;font:15px Arial,sans-serif}
+header{padding:24px 18px 18px;background:linear-gradient(120deg,#050505,#242424);border-bottom:1px solid #555}
+h1{font-size:27px;letter-spacing:3px;margin:0 0 6px}header p{color:#aaa;margin:0}
+.badge{display:inline-block;border:1px solid #777;padding:5px 9px;margin-top:13px;font-size:11px;letter-spacing:2px}
+main{padding:16px;max-width:760px;margin:auto}.hero{border:1px solid #444;background:linear-gradient(135deg,#151515,#050505);padding:18px;margin-bottom:16px}
+.hero strong{font-size:18px}.hero p{color:#aaa;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.tile,button{background:#151515;color:#fff;border:1px solid #555;padding:15px;border-radius:8px;text-align:left;font-weight:bold}
+.tile small{display:block;color:#999;font-weight:normal;margin-top:7px}.tile:active,button:active{background:#333}
+.panel{margin-top:16px;border:1px solid #444;padding:15px;border-radius:8px}label{display:block;margin-bottom:9px;color:#bbb}
+input{width:100%;background:#050505;color:white;border:1px solid #666;padding:13px;border-radius:6px;margin-bottom:10px}
+button.primary{width:100%;text-align:center;background:#eee;color:#080808;border:0}
+#result{white-space:pre-wrap;overflow-wrap:anywhere;color:#ddd;line-height:1.5;margin-top:14px}
+a{color:#fff}footer{text-align:center;color:#777;font-size:12px;padding:24px}
+@media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style></head>
+<body>
+<header><h1>SHADOW OSINT</h1><p>Открытые источники · Анализ · Проверка</p><span class="badge">BLACK / WHITE INTERFACE</span></header>
+<main>
+<section class="hero"><strong>ТЁМНАЯ ПАНЕЛЬ АНАЛИТИКИ</strong><p>Проверяйте публичную техническую информацию. Не используйте сервис для преследования, доксинга или доступа к чужим аккаунтам.</p></section>
+<div class="grid">
+<button class="tile" data-mode="username">⌕ Username Search<small>Публичные профили и варианты ников</small></button>
+<button class="tile" data-mode="phone">▣ Phone Info<small>Формат номера</small></button>
+<button class="tile" data-mode="email">✉ Email Check<small>Домен и MX-записи</small></button>
+<button class="tile" data-mode="ip">◎ IP Lookup<small>Приблизительная геоинформация</small></button>
+<button class="tile" data-mode="domain">⌘ Domain Lookup<small>Публичные DNS-записи</small></button>
+<button class="tile" data-mode="photo">▧ Photo Metadata<small>EXIF и свойства фото</small></button>
+</div>
+<section class="panel"><label id="label">Выберите инструмент выше</label><input id="query" placeholder="Введите запрос..." autocomplete="off"><input id="file" type="file" accept="image/*" hidden><button class="primary" id="run">ПРОВЕРИТЬ</button><div id="result"></div></section>
+<footer>SHADOW OSINT · Результаты зависят от доступности публичных источников</footer>
+</main>
+<script>
+const tg=window.Telegram?.WebApp; if(tg){tg.ready();tg.expand();}
+let mode="";
+const labels={username:"Введите никнейм",phone:"Введите номер в международном формате",email:"Введите email",ip:"Введите IP-адрес",domain:"Введите домен",photo:"Выберите фотографию"};
+document.querySelectorAll(".tile").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.getElementById("label").textContent=labels[mode];document.getElementById("query").hidden=mode==="photo";document.getElementById("file").hidden=mode!=="photo";document.getElementById("result").textContent="";});
+document.getElementById("run").onclick=async()=>{
+ const out=document.getElementById("result");out.textContent="Обработка…";
+ try{
+ let res;
+ if(mode==="photo"){
+  const f=document.getElementById("file").files[0];if(!f)throw Error("Сначала выберите фото.");
+  const fd=new FormData();fd.append("file",f);
+  res=await fetch("/api/photo",{method:"POST",body:fd,headers:{"X-Telegram-Init-Data":tg?.initData||""}});
+ }else{
+  if(!mode)throw Error("Сначала выберите инструмент.");
+  const q=document.getElementById("query").value.trim();if(!q)throw Error("Введите запрос.");
+  const endpoint={username:"username",phone:"phone",email:"email",ip:"ip",domain:"domain"}[mode];
+  res=await fetch(`/api/${endpoint}?q=${encodeURIComponent(q)}`,{headers:{"X-Telegram-Init-Data":tg?.initData||""}});
+ }
+ const data=await res.json();if(!res.ok)throw Error(data.error||data.detail||"Ошибка запроса");
+ out.textContent=JSON.stringify(data,null,2);
+ }catch(e){out.textContent="Ошибка: "+e.message}
+};
+</script></body></html>
